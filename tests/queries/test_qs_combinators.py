@@ -24,13 +24,10 @@ class QuerySetSetOperationTests(TestCase):
         self.assertNumbersEqual(qs1.union(qs2, qs3), [0, 1, 5, 8, 9], ordered=False)
 
     def test_union_two_evaluations(self):
-        qs = (
-            Number.objects.filter(pk__in=[1, 2])
-            .union(Number.objects.filter(pk__in=[4, 5]))
-            .order_by('num')
-        )
-        self.assertEqual(list(qs.order_by().values_list('pk', flat=True)), [1, 2, 4, 5])
-        self.assertCountEqual(list(qs.values_list('pk', flat=True)), [1, 2, 4, 5])
+        qs1 = Number.objects.filter(pk__in=[1, 2])
+        qs2 = Number.objects.filter(pk__in=[4, 5])
+        self.assertEqual(list(qs1.union(qs2).values_list('pk', flat=True)), [1, 2, 4, 5])
+        self.assertCountEqual(list(qs1.union(qs2).order_by('num').values_list('pk', flat=True)), [1, 2, 4, 5])
 
     @skipUnlessDBFeature('supports_select_intersection')
     def test_simple_intersection(self):
