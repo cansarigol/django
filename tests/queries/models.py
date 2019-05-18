@@ -546,6 +546,10 @@ class BaseA(models.Model):
     c = models.ForeignKey(FK3, models.SET_NULL, null=True)
 
 
+class BaseB(models.Model):
+    b = models.ForeignKey(FK2, models.SET_NULL, null=True)
+
+
 class Identifier(models.Model):
     name = models.CharField(max_length=100)
 

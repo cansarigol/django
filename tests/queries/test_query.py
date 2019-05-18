@@ -3,7 +3,7 @@ from datetime import datetime
 from django.core.exceptions import FieldError
 from django.db.models import CharField, F, Q
 from django.db.models.expressions import SimpleCol
-from django.db.models.fields.related_lookups import RelatedIsNull
+from django.db.models.fields.related_lookups import RelatedExact, RelatedIsNull
 from django.db.models.functions import Lower
 from django.db.models.lookups import Exact, GreaterThan, IsNull, LessThan
 from django.db.models.sql.query import Query
@@ -11,7 +11,7 @@ from django.db.models.sql.where import OR
 from django.test import SimpleTestCase
 from django.test.utils import register_lookup
 
-from .models import Author, Item, ObjectC, Ranking
+from .models import Author, BaseB, Item, ObjectC, Ranking
 
 
 class TestQuery(SimpleTestCase):
@@ -106,3 +106,16 @@ class TestQuery(SimpleTestCase):
         self.assertIsInstance(b_isnull, RelatedIsNull)
         self.assertIsInstance(b_isnull.lhs, SimpleCol)
         self.assertEqual(b_isnull.lhs.target, ObjectC._meta.get_field('objectb'))
+
+    def test_ticket_26368(self):
+        condition = Q(b__basea__isnull=True)
+        tilde_condition = ~Q(b__basea__isnull=False)
+
+        qs1 = BaseB.objects.filter(condition & tilde_condition)
+        qs2 = BaseB.objects.filter(condition).filter(tilde_condition)
+        lookup1 = qs1.query.where.children[1].children[0]
+        lookup2 = qs2.query.where.children[1].children[0]
+
+        self.assertEqual(len(lookup1.rhs.where.children), 3)
+        self.assertEqual(len(lookup2.rhs.where.children), 2)
+        self.assertIsInstance(lookup1.rhs.where.children[2], RelatedExact)
